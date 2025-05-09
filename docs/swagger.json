@@ -1,0 +1,171 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This API performs nmap port scans and tracks results",
+        "title": "Nmap Scan API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/diff/{host}": {
+            "get": {
+                "description": "Returns ports that were newly opened or closed in the latest scan.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scan"
+                ],
+                "summary": "Compare last 2 scans for a host",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host or IP address",
+                        "name": "host",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.PortDiff"
+                        }
+                    }
+                }
+            }
+        },
+        "/results/{host}": {
+            "get": {
+                "description": "Returns up to 10 recent scan results for the given host.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scan"
+                ],
+                "summary": "Get recent scans for a host",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host or IP address",
+                        "name": "host",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ScanResult"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/scan": {
+            "post": {
+                "description": "Scans one or more IPs or hostnames in parallel using nmap and stores results.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scan"
+                ],
+                "summary": "Initiate a scan",
+                "parameters": [
+                    {
+                        "description": "Scan input",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ScanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ScanResult"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.ScanRequest": {
+            "type": "object",
+            "properties": {
+                "hosts": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.ScanResult": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "open_ports": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "scan_id": {
+                    "type": "string"
+                },
+                "scanned_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.PortDiff": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "newly_closed": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "newly_opened": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        }
+    }
+}

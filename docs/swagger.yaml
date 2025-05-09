@@ -1,0 +1,113 @@
+basePath: /
+definitions:
+  models.ScanRequest:
+    properties:
+      hosts:
+        items:
+          type: string
+        type: array
+    type: object
+  models.ScanResult:
+    properties:
+      host:
+        type: string
+      open_ports:
+        items:
+          type: integer
+        type: array
+      scan_id:
+        type: string
+      scanned_at:
+        type: string
+    type: object
+  v1.PortDiff:
+    properties:
+      host:
+        type: string
+      newly_closed:
+        items:
+          type: integer
+        type: array
+      newly_opened:
+        items:
+          type: integer
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This API performs nmap port scans and tracks results
+  title: Nmap Scan API
+  version: "1.0"
+paths:
+  /diff/{host}:
+    get:
+      description: Returns ports that were newly opened or closed in the latest scan.
+      parameters:
+      - description: Host or IP address
+        in: path
+        name: host
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.PortDiff'
+      summary: Compare last 2 scans for a host
+      tags:
+      - scan
+  /results/{host}:
+    get:
+      description: Returns up to 10 recent scan results for the given host.
+      parameters:
+      - description: Host or IP address
+        in: path
+        name: host
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ScanResult'
+            type: array
+      summary: Get recent scans for a host
+      tags:
+      - scan
+  /scan:
+    post:
+      consumes:
+      - application/json
+      description: Scans one or more IPs or hostnames in parallel using nmap and stores
+        results.
+      parameters:
+      - description: Scan input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ScanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ScanResult'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Initiate a scan
+      tags:
+      - scan
+swagger: "2.0"
