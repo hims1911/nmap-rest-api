@@ -10,9 +10,11 @@ processors:
     timeout: 5s
 exporters:
   logging:
-    loglevel: debug
-  jaeger:
-    endpoint: jaeger:14250
+    verbosity: detailed
+  otlp:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
   prometheus:
     endpoint: 0.0.0.0:9464
     
@@ -21,7 +23,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [jaeger]
+      exporters: [otlp]
     metrics:
       receivers: [otlp]
       processors: [batch]

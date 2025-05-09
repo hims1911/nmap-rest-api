@@ -40,12 +40,12 @@ func QueueScan(hosts []string) string {
 	return scanID
 }
 
-func StartWorkerPool(concurrency int) {
+func StartWorkerPool(concurrency int, ctx context.Context) {
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			for {
-				ctx, span := tracer.Start(context.Background(), "worker.redis.pop")
-				val, err := database.RDB.BLPop(ctx, 0, "scan_jobs").Result()
+				ctxRedis, span := tracer.Start(ctx, "worker.redis.pop")
+				val, err := database.RDB.BLPop(ctxRedis, 0, "scan_jobs").Result()
 				span.End()
 				if err != nil || len(val) < 2 {
 					log.Printf("Failed to pop job: %v", err)
@@ -60,7 +60,7 @@ func StartWorkerPool(concurrency int) {
 
 				database.SetScanStatus(job.ScanID, job.Host, "in_progress")
 				start := time.Now()
-				_, span = tracer.Start(context.Background(), "nmap.run")
+				_, span = tracer.Start(ctx, "nmap.run")
 				span.End()
 
 				ports := runNmap(ctx, job.Host)
@@ -71,7 +71,7 @@ func StartWorkerPool(concurrency int) {
 					OpenPorts: ports,
 				}
 
-				_, span = tracer.Start(context.Background(), "db.store_result")
+				_, span = tracer.Start(ctx, "db.store_result")
 				errDatabase := database.StoreResult(res)
 				span.End()
 

@@ -38,7 +38,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.93.0
     container_name: otel-collector
     volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
     ports:
       - "4318:4318"
       - "4317:4317"
@@ -50,6 +50,7 @@ services:
     ports:
       - "16686:16686"
       - "14250:14250"
+      - "14317:4317"
 
   prometheus:
     image: prom/prometheus:latest

@@ -4,32 +4,17 @@ import (
 	"context"
 	"log"
 	"os"
-	"time"
 
 	businessv1 "nmap-rest-api/business/v1"
 	database "nmap-rest-api/database"
 	"nmap-rest-api/router"
 	"nmap-rest-api/telemetry"
-
-	"go.opentelemetry.io/otel"
 )
 
 func main() {
 	// Set up tracing first
 	telemetry.InitTracer()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer func() {
-		defer cancel()
-		telemetry.ShutdownTracer(ctx)
-	}()
-
-	// Emit test trace span
-	func() {
-		tracer := otel.Tracer("nmap-api")
-		_, span := tracer.Start(ctx, "startup.test")
-		defer span.End()
-		log.Println("✅ Test span 'startup.test' created")
-	}()
+	ctx := context.Background()
 
 	dsn := os.Getenv("DB_DSN")
 	if dsn == "" {
