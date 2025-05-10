@@ -6,7 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
-func IsValidHostname(host string) bool {
+// Assign to a function variable for test mocking
+var IsValidHostname = isValidHostname
+
+func isValidHostname(host string) bool {
 	hostnameRegex := `^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`
 	r := regexp.MustCompile(hostnameRegex)
 	return r.MatchString(host)

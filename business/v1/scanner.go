@@ -17,7 +17,9 @@ import (
 
 var tracer = otel.Tracer("nmap-api")
 
-func QueueScan(ctx context.Context, hosts []string) (string, error) {
+var QueueScan = queueScan
+
+func queueScan(ctx context.Context, hosts []string) (string, error) {
 	scanID := utils.GenerateScanID()
 	for _, host := range hosts {
 		// setting database status as pending
