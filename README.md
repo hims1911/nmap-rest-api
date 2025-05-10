@@ -24,7 +24,7 @@ This tool is designed to help DevOps engineers, SREs, and security analysts audi
 
 ## Flow Diagram
 
-
+![Architecture Diagram](/docs/flow_diagram.png)
 ---
 
 ## 🧭 Supported Endpoints
