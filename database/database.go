@@ -12,7 +12,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var DB *sql.DB
+var (
+	DB              *sql.DB
+	SetScanStatus   = setScanStatus
+	StoreResult     = storeResult
+	GetScanStatuses = getScanStatuses
+)
 
 func InitDB(dsn string) {
 	var err error
@@ -33,7 +38,7 @@ func InitDB(dsn string) {
 	log.Fatalf("Could not connect to DB after retries: %v", err)
 }
 
-func StoreResult(res models.ScanResult) error {
+func storeResult(res models.ScanResult) error {
 	_, err := DB.Exec(`INSERT INTO scan_results (scan_id, host, scanned_at, open_ports) VALUES ($1, $2, $3, $4)`,
 		res.ScanID,
 		res.Host,
@@ -43,7 +48,7 @@ func StoreResult(res models.ScanResult) error {
 	return err
 }
 
-func SetScanStatus(scanID, host, status string) error {
+func setScanStatus(scanID, host, status string) error {
 	query := `
 		INSERT INTO scan_status (scan_id, host, status, started_at)
 		VALUES ($1, $2, $3, CASE WHEN $3 = 'in_progress' THEN now() ELSE NULL END)
@@ -60,7 +65,7 @@ func SetScanStatus(scanID, host, status string) error {
 	return err
 }
 
-func GetScanStatuses(scanID string) ([]map[string]string, error) {
+func getScanStatuses(scanID string) ([]map[string]string, error) {
 	rows, err := DB.Query(`SELECT host, status FROM scan_status WHERE scan_id = $1`, scanID)
 	if err != nil {
 		return nil, err

@@ -7,7 +7,10 @@ import (
 )
 
 // Assign to a function variable for test mocking
-var IsValidHostname = isValidHostname
+var (
+	IsValidHostname = isValidHostname
+	GenerateScanID  = generateScanID
+)
 
 func isValidHostname(host string) bool {
 	hostnameRegex := `^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`
@@ -15,7 +18,7 @@ func isValidHostname(host string) bool {
 	return r.MatchString(host)
 }
 
-func GenerateScanID() string {
+func generateScanID() string {
 	return uuid.New().String()
 }
 
