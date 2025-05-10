@@ -59,11 +59,11 @@ func StartWorkerPool(concurrency int, ctx context.Context) {
 				telemetry.ScanHistogram.Record(ctx, duration)
 
 				if errDatabase != nil {
-					log.Println("❌ DB error:", errDatabase)
+					log.Println("DB error:", errDatabase)
 					telemetry.ScanFailures.Add(ctx, 1)
 					database.SetScanStatus(job.ScanID, job.Host, "failed")
 				} else {
-					log.Println("✅ Scan result stored")
+					log.Println("Scan result stored")
 					database.SetScanStatus(job.ScanID, job.Host, "done")
 				}
 			}

@@ -50,5 +50,5 @@ func InitMetrics(ctx context.Context) {
 	ScanFailures, _ = Meter.Int64Counter("nmap_scan_failures_total")
 	ScanHistogram, _ = Meter.Float64Histogram("nmap_scan_duration_seconds")
 
-	log.Println("✅ OpenTelemetry metrics via OTLP configured")
+	log.Println("OpenTelemetry metrics via OTLP configured")
 }

@@ -22,7 +22,7 @@ func InitDB(dsn string) {
 		if err != nil {
 			log.Printf("Attempt %d: Failed to open DB: %v", i+1, err)
 		} else if err = DB.Ping(); err == nil {
-			log.Println("✅ Connected to Postgres")
+			log.Println("Connected to Postgres")
 			return
 		} else {
 			log.Printf("Attempt %d: Waiting for DB to be ready...", i+1)
@@ -30,7 +30,7 @@ func InitDB(dsn string) {
 		time.Sleep(2 * time.Second)
 	}
 
-	log.Fatalf("❌ Could not connect to DB after retries: %v", err)
+	log.Fatalf("Could not connect to DB after retries: %v", err)
 }
 
 func StoreResult(res models.ScanResult) error {

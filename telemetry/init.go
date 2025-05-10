@@ -46,7 +46,7 @@ func InitTracer() {
 	)
 
 	otel.SetTracerProvider(tracerProvider)
-	log.Println("✅ OpenTelemetry Tracer initialized with endpoint:", endpoint)
+	log.Println("OpenTelemetry Tracer initialized with endpoint:", endpoint)
 }
 
 func ShutdownTracer(ctx context.Context) {
