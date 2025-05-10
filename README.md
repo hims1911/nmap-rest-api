@@ -1,15 +1,12 @@
-# nmap-rest-api
-
-
-# 🔍 Nmap-API: Distributed Port Scanning and Change Tracking Tool
+## 🔍 Nmap-API: Distributed Port Scanning and Change Tracking Tool
 
 A containerized, scalable REST API built in Golang that uses `nmap` under the hood to scan IP addresses or hostnames, persist results, detect changes between scans, and expose metrics via OpenTelemetry.
 
-This tool is designed to help DevOps engineers, SREs, and security analysts audit firewall rules and monitor port accessibility over time — in both real-time and historical contexts.
+This tool is designed to help monitor and scans for ports over time — in both real-time and historical contexts.
 
 ---
 
-## 🚀 Key Features
+### 🚀 Key Features
 
 - REST API to initiate port scans on multiple hosts in parallel
 - Historical scan results stored in PostgreSQL
@@ -22,12 +19,12 @@ This tool is designed to help DevOps engineers, SREs, and security analysts audi
 
 ---
 
-## Flow Diagram
+### Flow Diagram
 
 ![Architecture Diagram](/docs/flow_diagram.png)
 ---
 
-## 🧭 Supported Endpoints
+### 🧭 Supported Endpoints
 
 #### 1. **Initiate Scan**
 ```http
@@ -111,7 +108,7 @@ Returns the status of all hosts under a scan ID.
 
 ---
 
-## 📈 Metrics, Tracing & Reliability
+### 📈 Metrics, Tracing & Reliability
 
 This tool integrates with the **OpenTelemetry** stack:
 
@@ -125,13 +122,13 @@ This tool integrates with the **OpenTelemetry** stack:
   - Integrated with Jaeger UI at [`localhost:16686`](http://localhost:16686)
 
 - **System Uptime Handling**:
-  - Background worker with Redis BLPOP ensures durable queueing
-  - Scan status table ensures progress is tracked and recoverable
+  - Background worker with Redis BLPOP ensures reliable queueing
+  - Scan status table ensures progress is tracked and is recoverable at any point in time
   - Docker Compose handles restart policies and isolation
 
 ---
 
-## ⚠️ Limitations and Areas of Improvement
+### ⚠️ Limitations and Areas of Improvement
 
 While Nmap is powerful, it's not the fastest for internet-wide scanning. These tools can be integrated or used as alternatives:
 
@@ -141,14 +138,14 @@ While Nmap is powerful, it's not the fastest for internet-wide scanning. These t
 
 ---
 
-## ⚙️ Scaling to 1M RPS: Design Considerations
+### ⚙️ Scaling to 1M RPS: Design Considerations
 
 To scale this system to handle 1 million requests per second:
 
 | Component | Upgrade Strategy |
 |----------|------------------|
-| **API Layer** | Run behind a load balancer with autoscaled replicas |
-| **Queueing** | Switch Redis to a distributed message broker like Kafka |
+| **API Layer & Autoscaling** | Run behind a load balancer with autoscaled replicas /on demand replicas |
+| **Queueing** | Switch Redis to a distributed message broker like Kafka or using redis clusters |
 | **Scanning** | Use container pools or lambda-style scan workers with `rustscan` |
 | **Storage** | Partition scan results by time or host; consider using ClickHouse for analytics |
 | **Metrics/Trace** | Offload to dedicated OpenTelemetry Collector nodes |
@@ -156,7 +153,7 @@ To scale this system to handle 1 million requests per second:
 
 ---
 
-## 🐳 Deployment
+### 🐳 Deployment
 
 ```bash
 docker compose up --build
@@ -164,6 +161,7 @@ docker compose up --build
 
 Access services:
 - API: `http://localhost:8080`
+- Swagger: `http://localhost:8080/swagger/index.html`
 - Prometheus: `http://localhost:9090`
 - Jaeger: `http://localhost:16686`
 - Redis: `localhost:6379`
@@ -171,7 +169,7 @@ Access services:
 
 ---
 
-## 🙌 Contributing
+### 🙌 Contributing
 
 Feel free to fork and extend this project. Ideal contributions:
 - Swap Nmap for RustScan backend
