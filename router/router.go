@@ -20,5 +20,6 @@ func SetupRouter() *gin.Engine {
 	r.POST("/scan", apiv1.HandleScanRequest)
 	r.GET("/results/:host", apiv1.GetScanResults)
 	r.GET("/scan/status/:scan_id", apiv1.GetScanStatus)
+	r.GET("/diff/:host", apiv1.GetScanDiff)
 	return r
 }

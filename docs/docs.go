@@ -17,14 +17,14 @@ const docTemplate = `{
     "paths": {
         "/diff/{host}": {
             "get": {
-                "description": "Returns ports that were newly opened or closed in the latest scan.",
+                "description": "Returns ports that were newly opened or closed in the most recent scan for the host.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "scan"
                 ],
-                "summary": "Compare last 2 scans for a host",
+                "summary": "Compare last 2 scans",
                 "parameters": [
                     {
                         "type": "string",
@@ -38,7 +38,16 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.PortDiff"
+                            "$ref": "#/definitions/models.PortDiff"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -46,14 +55,14 @@ const docTemplate = `{
         },
         "/results/{host}": {
             "get": {
-                "description": "Returns up to 10 recent scan results for the given host.",
+                "description": "Returns up to 10 recent scan results for a host. Optionally filter by scan ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "scan"
                 ],
-                "summary": "Get recent scans for a host",
+                "summary": "Get scan results",
                 "parameters": [
                     {
                         "type": "string",
@@ -61,6 +70,12 @@ const docTemplate = `{
                         "name": "host",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by scan ID",
+                        "name": "scan_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -72,13 +87,22 @@ const docTemplate = `{
                                 "$ref": "#/definitions/models.ScanResult"
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
         },
         "/scan": {
             "post": {
-                "description": "Scans one or more IPs or hostnames in parallel using nmap and stores results.",
+                "description": "Scans one or more IPs or hostnames in the background and returns a scan ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -101,12 +125,12 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.ScanResult"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     },
@@ -119,9 +143,68 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/scan/status/{scan_id}": {
+            "get": {
+                "description": "Returns progress status for a scan ID, including host-wise scan completion states.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scan"
+                ],
+                "summary": "Get scan job status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Scan ID",
+                        "name": "scan_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "models.PortDiff": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "newly_closed": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "newly_opened": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "models.ScanRequest": {
             "type": "object",
             "properties": {
@@ -152,38 +235,18 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "v1.PortDiff": {
-            "type": "object",
-            "properties": {
-                "host": {
-                    "type": "string"
-                },
-                "newly_closed": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "newly_opened": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
-	Host:             "localhost:8080",
-	BasePath:         "/",
+	Version:          "",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Nmap Scan API",
-	Description:      "This API performs nmap port scans and tracks results",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

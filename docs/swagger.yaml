@@ -1,5 +1,17 @@
-basePath: /
 definitions:
+  models.PortDiff:
+    properties:
+      host:
+        type: string
+      newly_closed:
+        items:
+          type: integer
+        type: array
+      newly_opened:
+        items:
+          type: integer
+        type: array
+    type: object
   models.ScanRequest:
     properties:
       hosts:
@@ -20,29 +32,13 @@ definitions:
       scanned_at:
         type: string
     type: object
-  v1.PortDiff:
-    properties:
-      host:
-        type: string
-      newly_closed:
-        items:
-          type: integer
-        type: array
-      newly_opened:
-        items:
-          type: integer
-        type: array
-    type: object
-host: localhost:8080
 info:
   contact: {}
-  description: This API performs nmap port scans and tracks results
-  title: Nmap Scan API
-  version: "1.0"
 paths:
   /diff/{host}:
     get:
-      description: Returns ports that were newly opened or closed in the latest scan.
+      description: Returns ports that were newly opened or closed in the most recent
+        scan for the host.
       parameters:
       - description: Host or IP address
         in: path
@@ -55,18 +51,29 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.PortDiff'
-      summary: Compare last 2 scans for a host
+            $ref: '#/definitions/models.PortDiff'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Compare last 2 scans
       tags:
       - scan
   /results/{host}:
     get:
-      description: Returns up to 10 recent scan results for the given host.
+      description: Returns up to 10 recent scan results for a host. Optionally filter
+        by scan ID.
       parameters:
       - description: Host or IP address
         in: path
         name: host
         required: true
+        type: string
+      - description: Filter by scan ID
+        in: query
+        name: scan_id
         type: string
       produces:
       - application/json
@@ -77,15 +84,21 @@ paths:
             items:
               $ref: '#/definitions/models.ScanResult'
             type: array
-      summary: Get recent scans for a host
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get scan results
       tags:
       - scan
   /scan:
     post:
       consumes:
       - application/json
-      description: Scans one or more IPs or hostnames in parallel using nmap and stores
-        results.
+      description: Scans one or more IPs or hostnames in the background and returns
+        a scan ID.
       parameters:
       - description: Scan input
         in: body
@@ -96,18 +109,45 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
-            items:
-              $ref: '#/definitions/models.ScanResult'
-            type: array
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: Bad Request
           schema:
             additionalProperties: true
             type: object
       summary: Initiate a scan
+      tags:
+      - scan
+  /scan/status/{scan_id}:
+    get:
+      description: Returns progress status for a scan ID, including host-wise scan
+        completion states.
+      parameters:
+      - description: Scan ID
+        in: path
+        name: scan_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get scan job status
       tags:
       - scan
 swagger: "2.0"

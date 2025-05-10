@@ -1,0 +1,31 @@
+package utils
+
+import (
+	"regexp"
+
+	"github.com/google/uuid"
+)
+
+func IsValidHostname(host string) bool {
+	hostnameRegex := `^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`
+	r := regexp.MustCompile(hostnameRegex)
+	return r.MatchString(host)
+}
+
+func GenerateScanID() string {
+	return uuid.New().String()
+}
+
+func Diff(a, b []int) []int {
+	m := make(map[int]bool)
+	for _, v := range b {
+		m[v] = true
+	}
+	var result []int
+	for _, v := range a {
+		if !m[v] {
+			result = append(result, v)
+		}
+	}
+	return result
+}

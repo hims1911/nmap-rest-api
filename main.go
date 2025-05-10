@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	businessv1 "nmap-rest-api/business/v1"
 	database "nmap-rest-api/database"
 	"nmap-rest-api/router"
 	"nmap-rest-api/telemetry"
+	"nmap-rest-api/worker"
 )
 
 func main() {
@@ -29,10 +29,11 @@ func main() {
 	telemetry.InitMetrics(ctx)
 
 	// Start async workers
-	businessv1.StartWorkerPool(5)
+	// TODO: Instead of 5 we can any number of worker coming from config
+	worker.StartWorkerPool(5, ctx)
 
 	// HTTP server
 	r := router.SetupRouter()
-	log.Println("🚀 API Server running on :8080")
+	log.Println("API Server running on :8080")
 	r.Run(":8080")
 }

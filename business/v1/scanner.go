@@ -4,93 +4,48 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
-	"os/exec"
 	"strconv"
 	"strings"
-	"time"
 
 	database "nmap-rest-api/database"
 	models "nmap-rest-api/models/v1"
-	"nmap-rest-api/telemetry"
+	"nmap-rest-api/utils"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 )
 
-type PortDiff struct {
-	Host        string `json:"host"`
-	NewlyOpened []int  `json:"newly_opened"`
-	NewlyClosed []int  `json:"newly_closed"`
-}
-
 var tracer = otel.Tracer("nmap-api")
 
-func QueueScan(hosts []string) string {
-	scanID := generateScanID()
+func QueueScan(ctx context.Context, hosts []string) (string, error) {
+	scanID := utils.GenerateScanID()
 	for _, host := range hosts {
-		database.SetScanStatus(scanID, host, "pending")
+		// setting database status as pending
+		err := database.SetScanStatus(scanID, host, "pending")
+		if err != nil {
+			return "", err
+		}
+
+		// creating a job model
 		job := models.ScanJob{ScanID: scanID, Host: host}
-		jobJSON, _ := json.Marshal(job)
-		ctx, span := tracer.Start(context.Background(), "queue.redis.push")
+		jobJSON, err := json.Marshal(job)
+		if err != nil {
+			log.Println("error receieved while marshaling")
+			return "", err
+		}
+
+		// creating the tracer
+		ctxTracer, span := tracer.Start(ctx, "queue.redis.push")
 		defer span.End()
-		_ = database.RDB.RPush(ctx, "scan_jobs", jobJSON).Err()
+
+		// pushing it to redis
+		errRedis := database.RDB.RPush(ctxTracer, "scan_jobs", jobJSON).Err()
+		if errRedis != nil {
+			log.Println("error generated while storing scan_jobs to redis")
+			// TODO: redis store not getting the value then worker can't pick it
+		}
 	}
-	return scanID
-}
-
-func StartWorkerPool(concurrency int, ctx context.Context) {
-	for i := 0; i < concurrency; i++ {
-		go func() {
-			for {
-				ctxRedis, span := tracer.Start(ctx, "worker.redis.pop")
-				val, err := database.RDB.BLPop(ctxRedis, 0, "scan_jobs").Result()
-				span.End()
-				if err != nil || len(val) < 2 {
-					log.Printf("Failed to pop job: %v", err)
-					continue
-				}
-
-				var job models.ScanJob
-				if err := json.Unmarshal([]byte(val[1]), &job); err != nil {
-					log.Printf("Invalid job format: %v", err)
-					continue
-				}
-
-				database.SetScanStatus(job.ScanID, job.Host, "in_progress")
-				start := time.Now()
-				_, span = tracer.Start(ctx, "nmap.run")
-				span.End()
-
-				ports := runNmap(ctx, job.Host)
-				res := models.ScanResult{
-					ScanID:    job.ScanID,
-					Host:      job.Host,
-					ScannedAt: time.Now(),
-					OpenPorts: ports,
-				}
-
-				_, span = tracer.Start(ctx, "db.store_result")
-				errDatabase := database.StoreResult(res)
-				span.End()
-
-				duration := time.Since(start).Seconds()
-
-				telemetry.ScanCounter.Add(ctx, 1)
-				telemetry.ScanHistogram.Record(ctx, duration)
-
-				if errDatabase != nil {
-					log.Println("❌ DB error:", errDatabase)
-					telemetry.ScanFailures.Add(ctx, 1)
-					database.SetScanStatus(job.ScanID, job.Host, "failed")
-				} else {
-					log.Println("✅ Scan result stored")
-					database.SetScanStatus(job.ScanID, job.Host, "done")
-				}
-			}
-		}()
-	}
+	return scanID, nil
 }
 
 func FetchScanHistoryFiltered(host string, scanID string) []models.ScanResult {
@@ -139,7 +94,7 @@ func FetchScanHistoryFiltered(host string, scanID string) []models.ScanResult {
 	return results
 }
 
-func ComputeDiff(host string) PortDiff {
+func ComputeDiff(host string) models.PortDiff {
 	rows, err := database.DB.Query(`
 		SELECT open_ports
 		FROM scan_results
@@ -149,7 +104,7 @@ func ComputeDiff(host string) PortDiff {
 	`, host)
 	if err != nil {
 		log.Printf("DB error: %v", err)
-		return PortDiff{Host: host}
+		return models.PortDiff{Host: host}
 	}
 	defer rows.Close()
 
@@ -168,54 +123,13 @@ func ComputeDiff(host string) PortDiff {
 	}
 
 	if len(results) < 2 {
-		return PortDiff{Host: host}
+		return models.PortDiff{Host: host}
 	}
 
 	latest, previous := results[0], results[1]
-	return PortDiff{
+	return models.PortDiff{
 		Host:        host,
-		NewlyOpened: diff(latest, previous),
-		NewlyClosed: diff(previous, latest),
+		NewlyOpened: utils.Diff(latest, previous),
+		NewlyClosed: utils.Diff(previous, latest),
 	}
-}
-
-// runNmap will run the nmap
-func runNmap(_ context.Context, host string) []int {
-	log.Println("nmap function has been called for ", host)
-	scanType := "-sT"
-	cmd := exec.Command("nmap", "-Pn", scanType, "--max-retries", "2", host)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("nmap error for %s: %v\nOutput: %s", host, err, output)
-		return nil
-	}
-	log.Println("nmap function has been executed successfully ", host)
-
-	var openPorts []int
-	for _, line := range strings.Split(string(output), "\n") {
-		if strings.Contains(line, "/tcp") && strings.Contains(line, "open") {
-			var port int
-			fmt.Sscanf(strings.Fields(line)[0], "%d/tcp", &port)
-			openPorts = append(openPorts, port)
-		}
-	}
-	return openPorts
-}
-
-func generateScanID() string {
-	return uuid.New().String()
-}
-
-func diff(a, b []int) []int {
-	m := make(map[int]bool)
-	for _, v := range b {
-		m[v] = true
-	}
-	var result []int
-	for _, v := range a {
-		if !m[v] {
-			result = append(result, v)
-		}
-	}
-	return result
 }
