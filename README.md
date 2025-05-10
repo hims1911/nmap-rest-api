@@ -26,8 +26,6 @@ This tool is designed to help monitor and scans for ports over time — in both 
 
 ### 🧭 Supported Endpoints
 
-<img src="/docs/swagger.png" alt="Architecture Diagram" style="height: 70%;">
-
 #### 1. **Initiate Scan**
 ```http
 POST /scan
@@ -107,7 +105,7 @@ Returns the status of all hosts under a scan ID.
   }
 ]
 ```
-
+  <img src="/docs/swagger.png" alt="Architecture Diagram" style="height: 50%;">
 ---
 
 ### 📈 Metrics, Tracing & Reliability
