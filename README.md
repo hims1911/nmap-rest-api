@@ -26,6 +26,8 @@ This tool is designed to help monitor and scans for ports over time — in both 
 
 ### 🧭 Supported Endpoints
 
+<img src="/docs/swagger.png" alt="Architecture Diagram" style="height: 70%;">
+
 #### 1. **Initiate Scan**
 ```http
 POST /scan
@@ -115,16 +117,19 @@ This tool integrates with the **OpenTelemetry** stack:
 - **Metrics Exported via OTLP**:  
   - `nmap_scans_total`: count of scans run  
   - `nmap_scan_failures_total`: failed scans  
-  - `nmap_scan_duration_seconds`: duration histogram  
+  - `nmap_scan_duration_seconds`: duration histogram
+      ![Prometheus](/docs/prometheus.png)
 
 - **Distributed Tracing**:
   - Trace every step: queueing, scan execution, DB insert, Redis I/O
   - Integrated with Jaeger UI at [`localhost:16686`](http://localhost:16686)
+      ![Jaeger](/docs/jaeger.png)
 
 - **System Uptime Handling**:
   - Background worker with Redis BLPOP ensures reliable queueing
   - Scan status table ensures progress is tracked and is recoverable at any point in time
   - Docker Compose handles restart policies and isolation
+
 
 ---
 
