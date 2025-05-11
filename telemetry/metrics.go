@@ -25,7 +25,7 @@ var (
 	ScanQueueLength  metric.Int64ObservableGauge
 )
 
-func InitMetrics(ctx context.Context) {
+func InitMetrics(ctx context.Context, redisQueueLengthFunc func() int64) {
 
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
