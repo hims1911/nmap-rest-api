@@ -148,6 +148,7 @@ To scale this system to handle 1 million requests per second:
 | Component | Upgrade Strategy |
 |----------|------------------|
 | **API Layer & Autoscaling** | Run behind a load balancer with autoscaled replicas /on demand replicas |
+| **Database** | Connection Polling will help to distribute the load and can be used for scaling |
 | **Queueing** | Switch Redis to a distributed message broker like Kafka or using redis clusters |
 | **Scanning** | Use container pools or lambda-style scan workers with `rustscan` |
 | **Storage** | Partition scan results by time or host; consider using ClickHouse for analytics |
