@@ -177,6 +177,7 @@ Access services:
 
 Feel free to fork and extend this project. Ideal contributions:
 - Swap Nmap for RustScan backend
+- Retry Logic for Failure and Timeout Handling
 - Add scan scheduling and notification hooks
 - Scale scan workers horizontally via queue coordination
 
