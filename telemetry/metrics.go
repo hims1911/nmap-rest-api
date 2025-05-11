@@ -18,6 +18,11 @@ var (
 	ScanCounter   metric.Int64Counter
 	ScanFailures  metric.Int64Counter
 	ScanHistogram metric.Float64Histogram
+
+	// New metrics for worker and scan queue
+	WorkerActive     metric.Int64UpDownCounter
+	WorkerIdle       metric.Int64UpDownCounter
+	ScanQueueLength  metric.Int64ObservableGauge
 )
 
 func InitMetrics(ctx context.Context) {
@@ -49,6 +54,20 @@ func InitMetrics(ctx context.Context) {
 	ScanCounter, _ = Meter.Int64Counter("nmap_scans_total")
 	ScanFailures, _ = Meter.Int64Counter("nmap_scan_failures_total")
 	ScanHistogram, _ = Meter.Float64Histogram("nmap_scan_duration_seconds")
+
+	// New metrics
+	WorkerActive, _ = Meter.Int64UpDownCounter("worker_active_total")
+	WorkerIdle, _ = Meter.Int64UpDownCounter("worker_idle_total")
+	ScanQueueLength, _ = Meter.Int64ObservableGauge("scan_queue_length")
+
+	// Redis queue length gauge
+	Meter.RegisterCallback(
+		func(ctx context.Context, observer metric.Observer) error {
+			observer.ObserveInt64(ScanQueueLength, redisQueueLengthFunc())
+			return nil
+		},
+		ScanQueueLength,
+	)
 
 	log.Println("OpenTelemetry metrics via OTLP configured")
 }
