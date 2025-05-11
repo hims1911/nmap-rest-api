@@ -22,6 +22,8 @@ func StartWorkerPool(concurrency int, ctx context.Context) {
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			for {
+				telemetry.WorkerIdle.Add(ctx, -1)
+				telemetry.WorkerActive.Add(ctx, 1)
 				ctxRedis, span := tracer.Start(ctx, "worker.redis.pop")
 				val, err := database.RDB.BLPop(ctxRedis, 0, "scan_jobs").Result()
 				span.End()
@@ -66,6 +68,8 @@ func StartWorkerPool(concurrency int, ctx context.Context) {
 					log.Println("Scan result stored")
 					database.SetScanStatus(job.ScanID, job.Host, "done")
 				}
+				telemetry.WorkerActive.Add(ctx, -1)
+				telemetry.WorkerIdle.Add(ctx, 1)
 			}
 		}()
 	}
