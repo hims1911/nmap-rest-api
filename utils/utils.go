@@ -2,6 +2,7 @@ package utils
 
 import (
 	"regexp"
+	"net"
 
 	"github.com/google/uuid"
 )
@@ -13,6 +14,11 @@ var (
 )
 
 func isValidHostname(host string) bool {
+	// First, check if it's a valid IP address
+	if ip := net.ParseIP(host); ip != nil {
+		return true
+	}
+
 	hostnameRegex := `^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`
 	r := regexp.MustCompile(hostnameRegex)
 	return r.MatchString(host)
