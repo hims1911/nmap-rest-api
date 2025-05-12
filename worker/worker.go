@@ -38,10 +38,20 @@ func StartWorkerPool(concurrency int, ctx context.Context) {
 
 				database.SetScanStatus(job.ScanID, job.Host, "in_progress")
 				start := time.Now()
-				_, span = tracer.Start(ctx, "nmap.run")
-				span.End()
 
-				ports := runNmap(ctx, job.Host)
+				var ports []int
+				maxRetries := 3
+				for attempt := 1; attempt <= maxRetries; attempt++ {
+					_, span = tracer.Start(ctx, "nmap.run")
+					ports = runNmap(ctx, job.Host)
+					span.End()
+					if len(ports) > 0 {
+						break
+					}
+					log.Printf("Retrying nmap (%d/%d) for %s", attempt, maxRetries, job.Host)
+					time.Sleep(time.Duration(attempt) * time.Second) // Exponential backoff
+				}
+
 				res := models.ScanResult{
 					ScanID:    job.ScanID,
 					Host:      job.Host,
@@ -49,12 +59,19 @@ func StartWorkerPool(concurrency int, ctx context.Context) {
 					OpenPorts: ports,
 				}
 
-				_, span = tracer.Start(ctx, "db.store_result")
-				errDatabase := database.StoreResult(res)
-				span.End()
+				var errDatabase error
+				for attempt := 1; attempt <= maxRetries; attempt++ {
+					_, span = tracer.Start(ctx, "db.store_result")
+					errDatabase = database.StoreResult(res)
+					span.End()
+					if errDatabase == nil {
+						break
+					}
+					log.Printf("Retrying DB store (%d/%d) for %s", attempt, maxRetries, job.Host)
+					time.Sleep(time.Duration(attempt) * time.Second)
+				}
 
 				duration := time.Since(start).Seconds()
-
 				telemetry.ScanCounter.Add(ctx, 1)
 				telemetry.ScanHistogram.Record(ctx, duration)
 
@@ -70,6 +87,7 @@ func StartWorkerPool(concurrency int, ctx context.Context) {
 		}()
 	}
 }
+
 
 // runNmap will run the nmap
 func runNmap(_ context.Context, host string) []int {
