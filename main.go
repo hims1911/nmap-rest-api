@@ -26,7 +26,14 @@ func main() {
 	database.InitRedis(ctx)
 
 	// Metrics
-	telemetry.InitMetrics(ctx)
+	telemetry.InitMetrics(ctx, func() int64 {
+		len, err := database.RDB.LLen(ctx, "scan_jobs").Result()
+		if err != nil {
+			log.Printf("Failed to get Redis queue length: %v", err)
+			return 0
+		}
+		return len
+	})
 
 	// Start async workers
 	// TODO: Instead of 5 we can any number of worker coming from config
